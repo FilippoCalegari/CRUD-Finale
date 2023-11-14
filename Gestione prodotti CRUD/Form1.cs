@@ -30,6 +30,7 @@ namespace Gestione_prodotti_CRUD
         {
             public string nome;
             public double prezzo;
+            public int quantita;
             public int eliminato;
         }
         private string currentAction = null;
@@ -158,7 +159,17 @@ namespace Gestione_prodotti_CRUD
                     {
                         if (double.TryParse(txtb_ProductPrice.Text, out _) || float.TryParse(txtb_ProductPrice.Text, out _) || int.TryParse(txtb_ProductPrice.Text, out _))
                         {
-                            AddProduct(txtb_ProductName.Text, double.Parse(txtb_ProductPrice.Text.Replace(".", ",")), 0, "Articoli.csv");
+                            Article[] articoli_validi = Search(txtb_ProductName.Text);
+
+                            if (articoli_validi.Length == 0)
+                                AddProduct(txtb_ProductName.Text, double.Parse(txtb_ProductPrice.Text.Replace(".", ",")), 1, 0, "Articoli.csv");
+
+                            else
+                            {
+                                DeleteByName(txtb_ProductName.Text);
+                                AddProduct(txtb_ProductName.Text, double.Parse(txtb_ProductPrice.Text.Replace(".", ",")), articoli_validi[0].quantita + 1, 0, "Articoli.csv"); 
+                            }
+                                
 
                             MessageBox.Show("Prodotto salvato con successo!");
                         }
@@ -172,29 +183,26 @@ namespace Gestione_prodotti_CRUD
 
                 case "SEARCH":
 
-                    Article[] articoli = Search(txtb_ProductName.Text);
-                    string[] response = new string[articoli.Length];
-                    string deleted = "";
+                    Article[] articoli = ReadFile();
                     bool found = false;
-                    
+
                     for (int i = 0; i < articoli.Length; i++)
                     {
-                        if (string.IsNullOrEmpty(articoli[i].nome))
+                        if (articoli[i].eliminato == 1 || string.IsNullOrEmpty(articoli[i].nome) || articoli[i].nome != txtb_ProductName.Text)
                             continue;
-                    
-                        found = true;
-                        deleted = "";
-                    
-                        if (articoli[i].eliminato == 1)
-                            deleted = "Eliminato";
-                    
-                        response[i] = $"Articolo: {articoli[i].nome} {articoli[i].prezzo.ToString()}€ {deleted}";
+
+                        else
+                        {
+                            MessageBox.Show(string.Join("\n", $"Il prodotto si trova alla riga {i + 1}."));
+                            found = true;
+                            break;
+                        }
                     }
-                    
-                    if(found == false)
-                        MessageBox.Show($"Nessun articolo trovato con il nome: {txtb_ProductName.Text}");
-                    else
-                        MessageBox.Show(string.Join("\n", response));
+
+                    if (found == false)
+                    {
+                        MessageBox.Show("Il prodotto scritto non esiste nel file.");
+                    }
 
                     break;
 
@@ -227,7 +235,7 @@ namespace Gestione_prodotti_CRUD
                             {
                                 for (int i = 0; i < productsToUpdate.Length; i++)
                                 {
-                                    AddProduct(txtb_NewProductName.Text, double.Parse(txtb_NewProductPrice.Text), productsToUpdate[i].eliminato, "Articoli.csv");
+                                    AddProduct(txtb_NewProductName.Text, double.Parse(txtb_NewProductPrice.Text), productsToUpdate[i].quantita, productsToUpdate[i].eliminato, "Articoli.csv");
                                 }
                                 MessageBox.Show("Prodotti modificati con successo!");
                             }
@@ -251,7 +259,7 @@ namespace Gestione_prodotti_CRUD
                     {
                         for (int i = 0; i < productsToRecover.Length; i++)
                         {
-                            AddProduct(productsToRecover[i].nome, productsToRecover[i].prezzo, 0, "Articoli.csv");
+                            AddProduct(productsToRecover[i].nome, productsToRecover[i].prezzo, productsToRecover[i].quantita, 0, "Articoli.csv");
                         }
 
                         MessageBox.Show("Prodotti recuperati con successo!");
@@ -270,7 +278,7 @@ namespace Gestione_prodotti_CRUD
                     {
                         for (int i = 0; i < productsToDelete.Length; i++)
                         {
-                            AddProduct(productsToDelete[i].nome, productsToDelete[i].prezzo, 1, "Articoli.csv");
+                            AddProduct(productsToDelete[i].nome, productsToDelete[i].prezzo, productsToDelete[i].quantita, 1, "Articoli.csv");
                         }
 
                         MessageBox.Show("Prodotti eliminati con successo!");
@@ -300,12 +308,12 @@ namespace Gestione_prodotti_CRUD
         #endregion
 
         #region Actions
-        private void AddProduct(string nome, double prezzo, int eliminato, string filePath)
+        private void AddProduct(string nome, double prezzo, int quantita, int eliminato, string filePath)
         {
             var oStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.Read);
             StreamWriter sw = new StreamWriter(oStream);
 
-            sw.WriteLine($"{nome};{prezzo};{eliminato}");
+            sw.WriteLine($"{nome};{prezzo};{quantita};{eliminato}");
             sw.Close();
         }
         private bool DeleteByName(string nome)
@@ -323,7 +331,7 @@ namespace Gestione_prodotti_CRUD
                     if (string.IsNullOrEmpty(articoli_validi[i].nome))
                         continue;
 
-                    fileLines[i] = $"{articoli_validi[i].nome};{articoli_validi[i].prezzo};{articoli_validi[i].eliminato}";
+                    fileLines[i] = $"{articoli_validi[i].nome};{articoli_validi[i].prezzo};{articoli_validi[i].quantita};{articoli_validi[i].eliminato}";
                 }
 
                 File.WriteAllLines("Articoli.csv", fileLines);
@@ -423,7 +431,7 @@ namespace Gestione_prodotti_CRUD
             file.Dispose();
 
             file = new StreamReader(FilePath);
-            string[] splittedLine = new string[3];
+            string[] splittedLine = new string[4];
             Article[] articoli = new Article[count];
             int j = 0;
 
@@ -440,7 +448,8 @@ namespace Gestione_prodotti_CRUD
                         Article articolo = new Article();
                         articolo.nome = splittedLine[0];
                         articolo.prezzo = double.Parse(splittedLine[1]);
-                        articolo.eliminato = int.Parse(splittedLine[2]);
+                        articolo.quantita = int.Parse(splittedLine[2]);
+                        articolo.eliminato = int.Parse(splittedLine[3]);
                         
                         articoli[j] = articolo;
                         j++;
