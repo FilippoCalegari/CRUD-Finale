@@ -218,20 +218,20 @@ namespace Gestione_prodotti_CRUD
 
                 case "UPDATE":
 
-                    Article[] productsToUpdate = Search(txtb_ProductName.Text);
-
-                    if (DeleteByName(txtb_ProductName.Text) == false)
-                        MessageBox.Show("Nessun prodotto da modificare!");
-
+                    if (txtb_NewProductName.Text == "" || txtb_NewProductPrice.Text == "")
+                    {
+                        MessageBox.Show("Inserire qualcosa.");
+                    }
                     else
                     {
-                        if (txtb_NewProductName.Text == "" || txtb_NewProductPrice.Text == "")
+                        if (double.TryParse(txtb_NewProductPrice.Text, out _) || float.TryParse(txtb_NewProductPrice.Text, out _) || int.TryParse(txtb_NewProductPrice.Text, out _))
                         {
-                            MessageBox.Show("Inserire qualcosa.");
-                        }
-                        else
-                        {
-                            if (double.TryParse(txtb_NewProductPrice.Text, out _) || float.TryParse(txtb_NewProductPrice.Text, out _) || int.TryParse(txtb_NewProductPrice.Text, out _))
+                            Article[] productsToUpdate = Search(txtb_ProductName.Text);
+
+                            if (DeleteByName(txtb_ProductName.Text) == false)
+                                MessageBox.Show("Nessun prodotto da modificare.");
+
+                            else
                             {
                                 for (int i = 0; i < productsToUpdate.Length; i++)
                                 {
@@ -239,10 +239,10 @@ namespace Gestione_prodotti_CRUD
                                 }
                                 MessageBox.Show("Prodotti modificati con successo!");
                             }
-                            else
-                            {
-                                MessageBox.Show("Inserisci un valore numerico nella casella del prezzo.");
-                            }
+                        }
+                        else
+                        {
+                            MessageBox.Show("Inserisci un valore numerico nella casella del prezzo.");
                         }
                     }
 
